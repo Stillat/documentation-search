@@ -1,5 +1,6 @@
 {
     "name": "stillat/documentation-search",
+    "license": "MIT",
     "autoload": {
         "psr-4": {
             "Stillat\\DocumentationSearch\\": "src"
