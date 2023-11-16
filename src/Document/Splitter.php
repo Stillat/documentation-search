@@ -290,6 +290,10 @@ class Splitter implements DocumentSplitter
 
     protected function shouldIsolateNode(DOMNode $node): bool
     {
+        if (! method_exists($node, 'hasAttribute') || ! method_exists($node, 'getAttribute')) {
+            return false;
+        }
+
         if ($node->hasAttribute('data-indexer') && $node->getAttribute('data-indexer') === 'nobreak') {
             return true;
         }
