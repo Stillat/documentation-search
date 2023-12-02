@@ -1,4 +1,4 @@
-# Documentation Search for Statamic
+![](.art/banner.jpg)
 
 Documentation Search for Statamic that provides a custom search provider, focused on searching documentation sites.
 
