@@ -94,6 +94,10 @@ class SearchProvider extends Entries
 
             $entryUrl = $entry->url();
 
+            if (! $entryUrl) {
+                continue;
+            }
+
             IndexingContent::dispatch($stringValue, $entry);
 
             $this->splitter->setEntryData($rootData);
