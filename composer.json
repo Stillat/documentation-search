@@ -22,16 +22,16 @@
     },
     "require": {
         "php": "^8.1",
-        "statamic/cms": "^4",
+        "statamic/cms": "^4 || ^5",
         "laravel/pint": "^1.13",
-        "stillat/statamic-template-resolver": "^1.0.2",
+        "stillat/statamic-template-resolver": "^1.1",
         "ext-dom": "*",
         "ext-mbstring": "*",
         "ext-libxml": "*"
     },
     "require-dev": {
         "pestphp/pest": "^2.24",
-        "orchestra/testbench": "^8.14",
+        "orchestra/testbench": "^8.14 || ^9",
         "pestphp/pest-plugin-laravel": "^2.2"
     },
     "config": {
