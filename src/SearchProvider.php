@@ -2,8 +2,10 @@
 
 namespace Stillat\DocumentationSearch;
 
+use Exception;
 use Illuminate\Support\Collection;
 use Statamic\Search\Searchables\Entries;
+use Stillat\DocumentationSearch\Contracts\ContentRetriever;
 use Stillat\DocumentationSearch\Contracts\DocumentSplitter;
 use Stillat\DocumentationSearch\Contracts\DocumentTransformer;
 use Stillat\DocumentationSearch\Document\Splitter;
@@ -47,6 +49,17 @@ class SearchProvider extends Entries
         $searchHeadings = $config['search_headings'] ?? ['h2', 'h3', 'h4', 'h5', 'h6'];
         $skipHeaders = $config['skip_headers'] ?? [];
         $skipHeaders = array_map('mb_strtolower', $skipHeaders);
+        $contentRetriever = $config['content_retriever'] ?? null;
+
+        if ($contentRetriever && class_exists($contentRetriever)) {
+            $contentRetriever = app($contentRetriever);
+
+            if (! $contentRetriever instanceof ContentRetriever) {
+                $className = get_class($contentRetriever);
+
+                throw new Exception("[{$className}] does not implement ContentRetriever.");
+            }
+        }
 
         $configuration = new SplitterConfiguration();
         // +1 to account for the heading we will add to the root of the document.
@@ -60,15 +73,10 @@ class SearchProvider extends Entries
         $results = [];
 
         $entries = parent::provide();
-
         foreach ($entries as $entry) {
             $blueprint = $entry->blueprint()->handle();
             $collection = $entry->collection()->handle();
             $id = $entry->id();
-
-            if (! $this->templateManager->hasTemplate($collection, $blueprint)) {
-                continue;
-            }
 
             $rootData = array_merge(
                 $entry->data()->all(), [
@@ -76,15 +84,23 @@ class SearchProvider extends Entries
                     'collection' => $collection,
                 ]
             );
+            if (! $this->templateManager->hasTemplate($collection, $blueprint)) {
+                if ($contentRetriever) {
+                    $result = $contentRetriever->getContent($entry);
+                } else {
+                    continue;
+                }
+            } else {
 
-            $templateData = $entry->toAugmentedArray();
-            $templateData['is_rendering_search'] = true;
+                $templateData = $entry->toAugmentedArray();
+                $templateData['is_rendering_search'] = true;
 
-            $result = $this->templateManager->render($collection, $blueprint, $templateData, function ($template) {
-                $template = '<h2>Root Heading</h2>'.$template;
+                $result = $this->templateManager->render($collection, $blueprint, $templateData, function ($template) {
+                    $template = '<h2 data-indexer="ignore">Root Heading</h2>'.$template;
 
-                return Splitter::wrap($template);
-            });
+                    return Splitter::wrap($template);
+                });
+            }
 
             if (! $result) {
                 continue;

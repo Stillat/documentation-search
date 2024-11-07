@@ -6,7 +6,8 @@ class HeaderDetails
 {
     public function __construct(
         public string $id,
-        public string $text
+        public string $text,
+        public int $level = 1,
     ) {
     }
 }

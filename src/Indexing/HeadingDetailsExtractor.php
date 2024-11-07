@@ -49,6 +49,8 @@ class HeadingDetailsExtractor implements HeadingDetailsExtractorContract
             $values->heading->nodeValue
         );
 
+        $level = intval(mb_substr($values->heading->tagName, 1));
+
         // The heading has no ID, so we need to try and find a link.
         if (! $id) {
             /** @var DOMNode[] $links */
@@ -67,6 +69,6 @@ class HeadingDetailsExtractor implements HeadingDetailsExtractorContract
             }
         }
 
-        return new HeaderDetails($id, $text);
+        return new HeaderDetails($id, $text, $level);
     }
 }

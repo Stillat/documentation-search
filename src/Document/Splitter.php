@@ -318,13 +318,13 @@ class Splitter implements DocumentSplitter
                     'code_samples' => $this->codeSamples,
                     'additional_content' => $this->additionalContext,
                 ];
-
-                $this->additionalContext = [];
-                $this->codeSamples = [];
-                $this->buffer = '';
-                $this->activeHeading = $node;
-                $this->inList = false;
             }
+
+            $this->additionalContext = [];
+            $this->codeSamples = [];
+            $this->buffer = '';
+            $this->activeHeading = $node;
+            $this->inList = false;
         } else {
             if ($node->nodeType === XML_TEXT_NODE) {
                 $this->append($node->nodeValue);
@@ -452,7 +452,6 @@ class Splitter implements DocumentSplitter
 
         $this->additionalContext = [];
         $this->codeSamples = [];
-        $this->activeHeading = null;
         $this->buffer = '';
     }
 
@@ -488,6 +487,7 @@ class Splitter implements DocumentSplitter
     public function split($content): array
     {
         $this->sections = [];
+        $this->activeHeading = null;
 
         $currentErrorLevel = libxml_use_internal_errors();
         $this->dom = new DOMDocument();
