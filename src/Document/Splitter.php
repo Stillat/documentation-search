@@ -311,14 +311,12 @@ class Splitter implements DocumentSplitter
         }
 
         if ($this->breakOnHeading && Str::startsWith($node->nodeName, $this->documentHeadings) && ! $this->shouldIgnoreNode($node)) {
-            if (mb_strlen(trim($this->buffer)) > 0) {
-                $this->sections[] = [
-                    'heading' => $this->activeHeading,
-                    'content' => $this->buffer,
-                    'code_samples' => $this->codeSamples,
-                    'additional_content' => $this->additionalContext,
-                ];
-            }
+            $this->sections[] = [
+                'heading' => $this->activeHeading,
+                'content' => $this->buffer ?? '',
+                'code_samples' => $this->codeSamples,
+                'additional_content' => $this->additionalContext,
+            ];
 
             $this->additionalContext = [];
             $this->codeSamples = [];
