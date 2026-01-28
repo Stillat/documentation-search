@@ -4,6 +4,8 @@ namespace Stillat\DocumentationSearch;
 
 use Exception;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
+use Statamic\Facades\Entry;
 use Statamic\Search\Searchables\Entries;
 use Stillat\DocumentationSearch\Contracts\ContentRetriever;
 use Stillat\DocumentationSearch\Contracts\DocumentSplitter;
@@ -16,6 +18,7 @@ use Stillat\DocumentationSearch\Events\SearchEntriesCreated;
 use Stillat\DocumentationSearch\Events\StringValue;
 use Stillat\DocumentationSearch\Indexing\CreatedSearchEntry;
 use Stillat\StatamicTemplateResolver\StringTemplateManager;
+use Throwable;
 use Wilderborn\Partyline\Facade as Partyline;
 
 class SearchProvider extends Entries
@@ -23,6 +26,8 @@ class SearchProvider extends Entries
     private DocumentSplitter $splitter;
 
     private StringTemplateManager $templateManager;
+
+    private array $results = [];
 
     public function __construct(
         DocumentSplitter $splitter
@@ -39,6 +44,18 @@ class SearchProvider extends Entries
     public static function referencePrefix(): string
     {
         return 'doc';
+    }
+
+    protected function getEntries(): Collection
+    {
+        $ids = parent::provide()
+            ->map(fn (string $ref) => Str::after($ref, parent::referencePrefix().'::'))
+            ->values()
+            ->all();
+
+        return Entry::query()
+            ->whereIn('id', $ids)
+            ->get();
     }
 
     public function provide(): Collection
@@ -70,10 +87,8 @@ class SearchProvider extends Entries
         $this->splitter->setSplitterConfiguration($configuration);
 
         $totalSectionsCreated = 0;
-        $results = [];
 
-        $entries = parent::provide();
-        foreach ($entries as $entry) {
+        foreach ($this->getEntries() as $entry) {
             $blueprint = $entry->blueprint()->handle();
             $collection = $entry->collection()->handle();
             $id = $entry->id();
@@ -170,7 +185,7 @@ class SearchProvider extends Entries
                 $searchEntry->part = $part;
                 $searchEntry->data($rootData);
 
-                $results[] = $searchEntry;
+                $this->results[$searchEntry->getSearchReference()] = $searchEntry;
                 $createdSearchEntries[] = new CreatedSearchEntry($searchEntry, $section);
 
                 $totalSectionsCreated++;
@@ -182,11 +197,41 @@ class SearchProvider extends Entries
 
         Partyline::info('Created '.$totalSectionsCreated.' search sections.');
 
-        return collect($results);
+        file_put_contents($this->getStoragePath(), serialize($this->results));
+        $keys = array_keys($this->results);
+        unset($this->results);
+
+        return collect($keys);
+    }
+
+    protected function getStoragePath()
+    {
+        $path = storage_path('stillat/documentation_search/docs.json');
+        $dir = dirname($path);
+
+        if (! file_exists($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
+        return $path;
     }
 
     public function find(array $ids): Collection
     {
-        return collect();
+        $path = $this->getStoragePath();
+
+        if (! file_exists($path)) {
+            return collect();
+        }
+
+        try {
+            $data = unserialize(file_get_contents($path));
+
+            return collect($data)->filter(function ($entry, $id) use (&$ids) {
+                return in_array(Str::after($id, 'doc::'), $ids);
+            });
+        } catch (Throwable $t) {
+            return collect();
+        }
     }
 }
